@@ -25,7 +25,7 @@ const Header = () => {
   return (
     <>
       <div className="bg-white border-gray-200 dark:bg-gray-900 shadow-md">
-        <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+        <div className="flex flex-wrap items-center justify-between mx-auto p-4">
           <NavLink to="/" className="flex items-center">
             <img
               src="https://flowbite.com/docs/images/logo.svg"
@@ -151,7 +151,9 @@ const Header = () => {
                 <div className="py-1" role="none">
                   {/* Active: "bg-gray-100 text-gray-900", Not Active: "text-gray-700" */}
                   <NavLink
-                    to={`/dashboard/${auth.user.role === 1 ? "admin" : "user"}`}
+                    to={`/dashboard/${
+                      auth?.user?.role === 1 ? "admin" : "user"
+                    }`}
                     className="text-gray-700 block px-4 py-2 text-sm"
                     role="menuitem"
                     tabIndex={-1}

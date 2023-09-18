@@ -18,6 +18,12 @@ const AdminMenu = () => {
           Create Product
         </NavLink>
         <NavLink
+          to="/dashboard/admin/products"
+          className="p-2 border-b hover:bg-orange-300"
+        >
+          Products
+        </NavLink>
+        <NavLink
           to="/dashboard/admin/users"
           className="p-2 border-b hover:bg-orange-300"
         >

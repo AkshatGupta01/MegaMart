@@ -4,11 +4,11 @@ import Layout from "../../components/layout/Layout";
 import { useAuth } from "../../hooks/useAuth";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Select } from "antd";
 const { Option } = Select;
 
-const CreateProduct = () => {
+const UpdateProduct = () => {
   const [categories, setCategories] = useState([]);
   const [category, setCategory] = useState("");
   const [photo, setPhoto] = useState("");
@@ -17,8 +17,30 @@ const CreateProduct = () => {
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("");
   const [shipping, setShipping] = useState("");
+  const [id, setId] = useState("");
 
   const navigate = useNavigate();
+  const params = useParams();
+
+  //get single product:
+  const getSingleProduct = async () => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:8080/api/v1/product/get-product/${params.slug}`
+      );
+
+      setName(data.product.name);
+      setDescription(data.product.description);
+      setCategory(data.product.category);
+      setPrice(data.product.price);
+      setQuantity(data.product.quantity);
+      setShipping(data.product.shipping);
+      setId(data.product._id);
+    } catch (error) {
+      toast.error("Error in getting product information");
+      console.log(error);
+    }
+  };
 
   //to get all categories:
   const getAllCategory = async () => {
@@ -38,9 +60,10 @@ const CreateProduct = () => {
 
   useEffect(() => {
     getAllCategory();
+    getSingleProduct();
   }, []);
 
-  const handleCreate = async (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
 
     try {
@@ -50,11 +73,11 @@ const CreateProduct = () => {
       productData.append("price", price);
       productData.append("quantity", quantity);
       photo && productData.append("photo", photo);
-      productData.append("category", category);
+      productData.append("category", category._id);
       productData.append("shipping", shipping);
 
-      const { data } = await axios.post(
-        "http://localhost:8080/api/v1/product/create-product",
+      const { data } = await axios.put(
+        `http://localhost:8080/api/v1/product/update-product/${id}`,
         productData
       );
 
@@ -62,11 +85,31 @@ const CreateProduct = () => {
         toast.success(data?.message);
         navigate("/dashboard/admin/products");
       } else {
-        toast.error("Something went wrong in creating product");
+        toast.error("Something went wrong in updating product");
       }
     } catch (error) {
       console.log(error);
-      toast.error("Something went wrong while creating product");
+      toast.error("Something went wrong while updating product");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const answer = window.prompt(
+        "Are you sure you want to delete this product?"
+      );
+
+      if (!answer) return;
+
+      const { data } = await axios.delete(
+        `http://localhost:8080/api/v1/product/delete-product/${id}`
+      );
+
+      toast.success("Product deleted successfully");
+      navigate("/dashboard/admin/products");
+    } catch (error) {
+      toast.error("Something went wrong");
+      console.log(error);
     }
   };
 
@@ -75,7 +118,7 @@ const CreateProduct = () => {
       <div className="grid grid-cols-3 gap-3">
         <AdminMenu />
         <div className="flex flex-col border rounded-md shadow m-4 p-4 gap-1">
-          <div className="text-xl">Create Product</div>
+          <div className="text-xl">Update Product</div>
           <Select
             bordered={false}
             placeholder="Select a Category"
@@ -83,6 +126,7 @@ const CreateProduct = () => {
             showSearch
             className="w-full border rounded-lg my-2"
             onChange={(value) => setCategory(value)}
+            value={category.name}
           >
             {categories?.map((c) => (
               <Option key={c._id} value={c._id}>
@@ -93,7 +137,7 @@ const CreateProduct = () => {
 
           <div className="my-2">
             <label className="border rounded-lg p-2 w-full inline-block text-center text-white bg-purple-600 hover:bg-purple-700 hover:cursor-pointer">
-              {photo ? photo.name : "Upload Photo"}
+              {photo ? photo.name : "Change Photo"}
               <input
                 type="file"
                 name="photo"
@@ -104,15 +148,21 @@ const CreateProduct = () => {
             </label>
           </div>
 
-          {photo && (
+          {photo ? (
             <img
               src={URL.createObjectURL(photo)}
               alt="Product Photo"
               className="w-full aspect-square object-contain"
             />
+          ) : (
+            <img
+              src={`http://localhost:8080/api/v1/product/product-photo/${id}`}
+              alt="Product Photo"
+              className="w-full aspect-square object-contain"
+            />
           )}
 
-          <form className="flex flex-col gap-2 my-4" onSubmit={handleCreate}>
+          <form className="flex flex-col gap-2 my-4" onSubmit={handleUpdate}>
             <input
               type="text"
               placeholder="Name"
@@ -154,6 +204,7 @@ const CreateProduct = () => {
               showSearch
               className="border rounded-lg"
               onChange={(value) => setShipping(value)}
+              value={shipping ? "Yes" : "No"}
             >
               <Option value="1">Yes</Option>
               <Option value="0">No</Option>
@@ -162,13 +213,19 @@ const CreateProduct = () => {
               type="Submit"
               className="border rounded-lg p-2 w-full text-white bg-green-600 hover:bg-green-700 hover:cursor-pointer"
             >
-              Create
+              Update
             </button>
           </form>
+          <button
+            className="border rounded-lg p-2 w-full text-white bg-red-600 hover:bg-red-700 hover:cursor-pointer"
+            onClick={handleDelete}
+          >
+            Delete
+          </button>
         </div>
       </div>
     </Layout>
   );
 };
 
-export default CreateProduct;
+export default UpdateProduct;
