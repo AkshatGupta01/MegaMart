@@ -1,18 +1,33 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { Checkbox, Radio } from "antd";
 import { Prices } from "../components/Prices";
-import { useAuth } from "../hooks/useAuth";
 
 const HomePage = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [checked, setChecked] = useState([]);
   const [radio, setRadio] = useState([]);
-  const [auth, setAuth] = useAuth();
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+
+  //get total product count:
+  const getTotal = async () => {
+    try {
+      const { data } = await axios.get(
+        "http://localhost:8080/api/v1/product/product-count"
+      );
+      setTotal(data?.total);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   //to get all categories:
   const getAllCategory = async () => {
@@ -33,14 +48,17 @@ const HomePage = () => {
   //To get-all products
   const getAllProducts = async () => {
     try {
+      setLoading(true);
       const { data } = await axios.get(
-        "http://localhost:8080/api/v1/product/get-product"
+        `http://localhost:8080/api/v1/product/product-list/${page}`
       );
 
+      setLoading(false);
       if (data?.success) {
         setProducts(data.products);
       }
     } catch (error) {
+      setLoading(false);
       console.log(error);
       toast.error("Something went wrong in getting products");
     }
@@ -60,7 +78,31 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    console.log(auth);
+    //load more products on "Load more" button click:
+    const loadMore = async () => {
+      try {
+        setLoading(true);
+
+        const { data } = await axios.get(
+          `http://localhost:8080/api/v1/product/product-list/${page}`
+        );
+
+        if (data?.success) setProducts([...products, ...data?.products]);
+
+        setLoading(false);
+      } catch (error) {
+        setLoading(false);
+        console.log(error);
+      }
+    };
+
+    if (page === 1) return;
+
+    loadMore();
+  }, [page]);
+
+  useEffect(() => {
+    getTotal();
     getAllCategory();
   }, []);
 
@@ -124,9 +166,9 @@ const HomePage = () => {
           <h1 className="text-3xl p-2">Products</h1>
           <div className="flex flex-wrap gap-2 my-2">
             {products?.map((product, index) => (
-              <Link
+              <div
                 key={index}
-                to={`/dashboard/admin/product/${product.slug}`}
+                to={`/dashboard/product/${product.slug}`}
                 className="w-[250px]"
               >
                 <div className="max-w-sm bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
@@ -147,10 +189,14 @@ const HomePage = () => {
                     <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">
                       $ {product.price}
                     </p>
-                    <Link
-                      to="/"
-                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+
+                    <button
+                      className="mr-1 inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                      onClick={() => navigate(`/product/${product.slug}`)}
                     >
+                      More Details
+                    </button>
+                    <button className="ml-1 inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                       Buy
                       <svg
                         className="w-3.5 h-3.5 ml-2"
@@ -167,12 +213,23 @@ const HomePage = () => {
                           d="M1 5h12m0 0L9 1m4 4L9 9"
                         />
                       </svg>
-                    </Link>
+                    </button>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
+          {products && products.length < total && (
+            <button
+              className="p-2 my-4 bg-yellow-500 rounded-lg text-white hover:cursor-pointer hover:bg-yellow-600"
+              onClick={(e) => {
+                e.preventDefault();
+                setPage((prevPage) => prevPage + 1);
+              }}
+            >
+              {loading ? "Loading..." : "Load more"}
+            </button>
+          )}
         </div>
       </div>
     </Layout>
